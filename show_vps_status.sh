@@ -86,51 +86,45 @@ change_proxy_ip_priority() {
     v4=$(curl -s4m5 icanhazip.com -k || true)
     v6=$(curl -s6m5 icanhazip.com -k || true)
 
-    echo "请选择代理IP优先级："
-    echo "1. IPV4优先"
-    echo "2. IPV6优先"
-    echo "3. 仅IPV4"
-    echo "4. 仅IPV6"
-    read -r -p "请输入 [1-4]：" choose
+    echo "Select proxy IP priority:"
+    echo "1. prefer IPv4"
+    echo "2. prefer IPv6"
+    echo "3. IPv4 only"
+    echo "4. IPv6 only"
+    read -r -p "Input [1-4]: " choose
 
-    case "${choose:-}" in
-        1)
-            if [ -z "${v4:-}" ]; then
-                echo -e "${red}当前不存在IPV4地址，无法切换为IPV4优先。${plain}"
-                return 1
-            fi
-            rrpip="prefer_ipv4"
-            tip="IPV4优先(${v4})"
-            ;;
-        2)
-            if [ -z "${v6:-}" ]; then
-                echo -e "${red}当前不存在IPV6地址，无法切换为IPV6优先。${plain}"
-                return 1
-            fi
-            rrpip="prefer_ipv6"
-            tip="IPV6优先(${v6})"
-            ;;
-        3)
-            if [ -z "${v4:-}" ]; then
-                echo -e "${red}当前不存在IPV4地址，无法切换为仅IPV4。${plain}"
-                return 1
-            fi
-            rrpip="ipv4_only"
-            tip="仅IPV4(${v4})"
-            ;;
-        4)
-            if [ -z "${v6:-}" ]; then
-                echo -e "${red}当前不存在IPV6地址，无法切换为仅IPV6。${plain}"
-                return 1
-            fi
-            rrpip="ipv6_only"
-            tip="仅IPV6(${v6})"
-            ;;
-        *)
-            echo -e "${red}输入错误，未执行切换。${plain}"
+    if [ "${choose:-}" = "1" ]; then
+        if [ -z "${v4:-}" ]; then
+            echo -e "${red}IPv4 not found, cannot switch to prefer_ipv4.${plain}"
             return 1
-            ;;
-    esac
+        fi
+        rrpip="prefer_ipv4"
+        tip="IPV4优先(${v4})"
+    elif [ "${choose:-}" = "2" ]; then
+        if [ -z "${v6:-}" ]; then
+            echo -e "${red}IPv6 not found, cannot switch to prefer_ipv6.${plain}"
+            return 1
+        fi
+        rrpip="prefer_ipv6"
+        tip="IPV6优先(${v6})"
+    elif [ "${choose:-}" = "3" ]; then
+        if [ -z "${v4:-}" ]; then
+            echo -e "${red}IPv4 not found, cannot switch to ipv4_only.${plain}"
+            return 1
+        fi
+        rrpip="ipv4_only"
+        tip="仅IPV4(${v4})"
+    elif [ "${choose:-}" = "4" ]; then
+        if [ -z "${v6:-}" ]; then
+            echo -e "${red}IPv6 not found, cannot switch to ipv6_only.${plain}"
+            return 1
+        fi
+        rrpip="ipv6_only"
+        tip="仅IPV6(${v6})"
+    else
+        echo -e "${red}Invalid input, no changes applied.${plain}"
+        return 1
+    fi
 
     tmp_json=$(mktemp)
     sed 's://.*::g' "$cfg" | jq --arg ds "$rrpip" '.outbounds[0].domain_strategy = $ds' > "$tmp_json"
